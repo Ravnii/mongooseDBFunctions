@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions";
-import * as db from "../lib/azure-cosmosdb-mongodb";
+import * as db from "../lib/room-reservation-db";
 
 const httpTrigger: AzureFunction = async function (
   context: Context,
@@ -13,20 +13,21 @@ const httpTrigger: AzureFunction = async function (
 
     switch (req.method) {
       case "GET":
-        if (req?.query.id || (req?.body && req?.body?.id)) {
+        if (req?.query.id) {
           response = {
-            documentResponse: await db.findItemById(req?.body?.id),
+            documentResponse: await db.findItemById(req.query.id),
           };
         } else {
           // allows empty query to return all items
-          const dbQuery =
-            req?.query?.dbQuery || (req?.body && req?.body?.dbQuery);
+          // '{"dbQuery":{"room":"sofa"}}'
+          const dbQuery = req?.body?.dbQuery ?? {};
           response = {
             documentResponse: await db.findItems(dbQuery),
           };
         }
         break;
       case "POST":
+        //'{"document":{"room":"sofa", "date":"2021-01-01", "name":"Jesper"}}'
         if (req?.body?.document) {
           const insertOneResponse = await db.addItem(req?.body?.document);
           response = {
@@ -35,20 +36,18 @@ const httpTrigger: AzureFunction = async function (
         } else {
           throw Error("No document found");
         }
-
         break;
       case "DELETE":
-        if (req?.query?.id || (req?.body && req?.body?.id)) {
+        if (req?.query?.id) {
           response = {
             documentResponse: await db.deleteItemById(req?.body?.id),
           };
         } else {
           throw Error("No id found");
         }
-
         break;
       default:
-        throw Error(`${req.method} not allowed`)
+        throw Error(`${req.method} not allowed`);
     }
 
     context.res = {
