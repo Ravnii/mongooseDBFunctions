@@ -1,6 +1,6 @@
 import { Schema, model, connect } from "mongoose";
 
-let db=null;
+let db = null;
 
 type RoomReservation = {
   room: string;
@@ -9,7 +9,7 @@ type RoomReservation = {
 };
 
 const Reservationschema = new Schema(
-  { room: String, date: String, name: String },
+  { room: String, date: Date, name: String },
   { timestamps: true }
 );
 
@@ -22,20 +22,44 @@ export const init = async () => {
 };
 
 export const addItem = async (doc: RoomReservation) => {
-  const modelToInsert = new ReservationModel();
-  modelToInsert.room = doc.room;
-  modelToInsert.date = doc.date;
-  modelToInsert.name = doc.name;
+  const reservation = new ReservationModel();
+  reservation.room = doc.room;
+  reservation.date = new Date(doc.date);
+  reservation.name = doc.name;
 
-  return await modelToInsert.save();
+  return await reservation.save();
 };
 
 export const findItemById = async (id) => {
   return await ReservationModel.findById(id);
 };
 
-export const findItems = async (query) => {
-  return await ReservationModel.find(query);
+export const findAllItems = async () => {
+  return await ReservationModel.find({});
+};
+
+export const findItemsByRoom = async (room) => {
+  return await ReservationModel.find().where("room").equals(room);
+}
+
+export const findByName = async (name) => {
+  return await ReservationModel.find().where("name").equals(name);
+};
+
+export const findAllByDate = async () => {
+  return await ReservationModel.
+    find({ 
+      date: { 
+        $gte: Date.now(), 
+        $lte: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+      } 
+    }).
+    sort({ date: 1 });
+};
+
+export const findByDate = async (date) => {
+  return await ReservationModel.
+    find({date: new Date(date)});
 };
 
 export const deleteItemById = async (id) => {
